@@ -1,26 +1,39 @@
-import { useTexture } from '@react-three/drei'
-import { useLoader } from '@react-three/fiber'
-import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader'
+import { useTexture, useGLTF } from '@react-three/drei'
+import { Suspense } from 'react'
+
+const DeskModel = ({ position }) => {
+  // load the glb model
+  const { scene } = useGLTF('/models/desk.glb')
+  
+  // Clone the scene to avoid issues with multiple instances
+  const clonedScene = scene.clone()
+  
+  // Traverse the scene to enable shadows
+  clonedScene.traverse((child) => {
+    if (child.isMesh) {
+      child.castShadow = true
+      child.receiveShadow = true
+    }
+  })
+  
+  return (
+    <group position={position}>
+      <primitive object={clonedScene} scale={[1, 1, 1]} />
+    </group>
+  )
+}
 
 const Desk = ({ position = [-4, 0, -2] }) => {
   const walnutTexture = useTexture('/textures/walnut_diff_1k.jpg')
   
-  // Try to load the existing desk model, fallback to custom geometry
-  let deskModel = null
-  try {
-    deskModel = useLoader(GLTFLoader, '/models/desk.glb')
-  } catch (error) {
-    console.log('Desk model not found, using custom geometry')
-  }
-  
-  if (deskModel) {
-    return (
-      <group position={position}>
-        <primitive object={deskModel.scene} scale={[1, 1, 1]} castShadow />
-      </group>
-    )
-  }
-  
+  return (
+    <Suspense fallback={<FallbackDesk position={position} walnutTexture={walnutTexture} />}>
+      <DeskModel position={position} />
+    </Suspense>
+  )
+}
+
+const FallbackDesk = ({ position, walnutTexture }) => {
   return (
     <group position={position}>
       {/* Desktop */}
@@ -109,5 +122,8 @@ const Desk = ({ position = [-4, 0, -2] }) => {
     </group>
   )
 }
+
+// Preload the GLB model for better performance
+useGLTF.preload('/models/desk.glb')
 
 export default Desk
