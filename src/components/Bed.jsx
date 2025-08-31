@@ -1,80 +1,48 @@
-import { useTexture } from '@react-three/drei'
+import { useGLTF } from '@react-three/drei'
+import { Suspense, useRef } from 'react'
 
-const Bed = ({ position = [3, 0, -6] }) => {
-  const oakTexture = useTexture('/textures/oak_veneer_01_diff_1k.jpg')
-  
+const BedModel = ({ position, onSelect }) => {
+  const { scene } = useGLTF('/models/bed.glb')
+  const groupRef = useRef()
+
+  // Clone the scene to avoid issues with multiple instances
+  const clonedScene = scene.clone()
+
+  // Enable shadows
+  clonedScene.traverse((child) => {
+    if (child.isMesh) {
+      child.castShadow = true
+      child.receiveShadow = true
+    }
+  })
+
   return (
-    <group position={position}>
-      {/* Bed Frame Base */}
-      <mesh position={[0, -0.7, 0]} castShadow>
-        <boxGeometry args={[4, 0.3, 6]} />
-        <meshStandardMaterial 
-          map={oakTexture}
-          color="#8B4513"
-        />
-      </mesh>
-      
-      {/* Mattress */}
-      <mesh position={[0, -0.3, 0]} castShadow>
-        <boxGeometry args={[3.8, 0.4, 5.8]} />
-        <meshStandardMaterial color="#ffffff" />
-      </mesh>
-      
-      {/* Headboard */}
-      <mesh position={[0, 0.5, -2.8]} castShadow>
-        <boxGeometry args={[4, 2, 0.2]} />
-        <meshStandardMaterial 
-          map={oakTexture}
-          color="#8B4513"
-        />
-      </mesh>
-      
-      {/* Bed Legs */}
-      <mesh position={[-1.8, -0.9, -2.8]} castShadow>
-        <boxGeometry args={[0.2, 0.8, 0.2]} />
-        <meshStandardMaterial 
-          map={oakTexture}
-          color="#654321"
-        />
-      </mesh>
-      
-      <mesh position={[1.8, -0.9, -2.8]} castShadow>
-        <boxGeometry args={[0.2, 0.8, 0.2]} />
-        <meshStandardMaterial 
-          map={oakTexture}
-          color="#654321"
-        />
-      </mesh>
-      
-      <mesh position={[-1.8, -0.9, 2.8]} castShadow>
-        <boxGeometry args={[0.2, 0.8, 0.2]} />
-        <meshStandardMaterial 
-          map={oakTexture}
-          color="#654321"
-        />
-      </mesh>
-      
-      <mesh position={[1.8, -0.9, 2.8]} castShadow>
-        <boxGeometry args={[0.2, 0.8, 0.2]} />
-        <meshStandardMaterial 
-          map={oakTexture}
-          color="#654321"
-        />
-      </mesh>
-      
-      {/* Pillow */}
-      <mesh position={[0, 0.1, -2]} castShadow>
-        <boxGeometry args={[1.5, 0.3, 0.8]} />
-        <meshStandardMaterial color="#f0f0f0" />
-      </mesh>
-      
-      {/* Blanket */}
-      <mesh position={[0, 0, 1]} castShadow>
-        <boxGeometry args={[3.6, 0.1, 3]} />
-        <meshStandardMaterial color="#4169E1" />
-      </mesh>
+    <group
+      ref={groupRef}
+      position={position}
+      onClick={(e) => {
+        e.stopPropagation()
+        if (onSelect && groupRef.current) {
+          onSelect(groupRef.current) // Pass the group reference, not the clicked object
+        }
+      }}
+      onPointerOver={() => (document.body.style.cursor = 'pointer')}
+      onPointerOut={() => (document.body.style.cursor = 'auto')}
+    >
+      <primitive object={clonedScene} scale={[1, 1, 1]} />
     </group>
   )
 }
+
+const Bed = ({ position = [3, 0, -6], onSelect }) => {
+  return (
+    <Suspense fallback={null}>
+      <BedModel position={position} onSelect={onSelect} />
+    </Suspense>
+  )
+}
+
+// Preload for performance
+useGLTF.preload('/models/bed.glb')
 
 export default Bed
